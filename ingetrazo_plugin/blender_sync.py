@@ -52,7 +52,7 @@ class _BlenderSyncServer(QObject):
 
     def _on_transform_received(self, uid, t):
         group = self._find_group_by_uid(self.viewport.scene.groups, uid)
-        if group and getattr(group, "xform", None) is not None:
+        if group:
             from PySide6.QtGui import QMatrix4x4
             m = QMatrix4x4(
                 t[0], t[4], t[8],  t[12],
