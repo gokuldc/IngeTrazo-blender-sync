@@ -54,10 +54,3 @@ Run the Python unit tests for the protocol:
 python -m unittest discover tests/
 ```
 
-## Roadmap
-- [x] Initial TCP Bridge MVP
-- [x] Group/Component Geometry Sync
-- [x] Material properties sync (Color, Texture, Opacity)
-- [x] Support for native Blender collection organization based on IFC tags
-- [x] Two-way synchronization (Blender transformations -> IngeTrazo)
-- [x] Native triangulation of n-gons with holes
