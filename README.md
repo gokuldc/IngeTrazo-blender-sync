@@ -40,7 +40,6 @@ See [docs/protocol.md](docs/protocol.md) for the JSON TCP protocol specification
 
 ## Current limitations
 - **Loose geometry**: All ungrouped faces are sent as a single "Loose Geometry" object. Because loose geometry does not have a transform origin in IngeTrazo, two-way synchronization (moving objects in Blender) only works on **Groups**, not loose geometry. Group your objects in IngeTrazo (`Ctrl+G`) before moving them in Blender.
-- **Holes in faces**: Blender MVP does not currently triangulate n-gons with holes, these may need manual fixing in Blender if they occur.
 
 ## Development
 To work on the project, you can symlink the plugin and addon files directly to their respective application folders.
@@ -61,3 +60,4 @@ python -m unittest discover tests/
 - [x] Material properties sync (Color, Texture, Opacity)
 - [x] Support for native Blender collection organization based on IFC tags
 - [x] Two-way synchronization (Blender transformations -> IngeTrazo)
+- [x] Native triangulation of n-gons with holes

@@ -194,6 +194,7 @@ class _BlenderSyncServer(QObject):
         for i, v in enumerate(mesh.vertices):
             verts.append([v.position.x(), v.position.y(), v.position.z()])
             vid_to_idx[id(v)] = i
+            vid_to_idx[id(v.position)] = i
 
         faces = []
         uvs = []
@@ -223,22 +224,6 @@ class _BlenderSyncServer(QObject):
                         vx, vy, vz, vc = uvw[4:8]
                         has_uv = True
 
-            for v in f.loop:
-                idx = vid_to_idx.get(id(v))
-                if idx is not None:
-                    face_indices.append(idx)
-                    if has_uv:
-                        x, y, z = v.position.x(), v.position.y(), v.position.z()
-                        face_uvs.append([ux*x + uy*y + uz*z + uc, vx*x + vy*y + vz*z + vc])
-                    else:
-                        face_uvs.append([0.0, 0.0])
-                    
-            if len(face_indices) < 3:
-                continue
-                
-            faces.append(face_indices)
-            uvs.append(face_uvs)
-            
             # Extract material for this face
             attrs = effective_attrs(f.attrs, group_mat) if group_mat else f.attrs
             mat_name = attrs.get("mat") if attrs else None
@@ -263,8 +248,53 @@ class _BlenderSyncServer(QObject):
                     "opacity": opacity,
                     "texture_path": texture_path
                 })
+                
+            mat_idx = mat_to_idx[mat_name]
             
-            face_materials.append(mat_to_idx[mat_name])
+            if getattr(f, "hole_loops", None):
+                try:
+                    from core.triangulate import triangulate
+                except ImportError:
+                    triangulate = None
+                
+                if triangulate:
+                    outer = [v.position for v in f.loop]
+                    holes = [[v.position for v in h] for h in f.hole_loops]
+                    tris = triangulate(outer, holes, f.normal())
+                    for tri in tris:
+                        tri_indices = []
+                        tri_uvs = []
+                        for p in tri:
+                            idx = vid_to_idx.get(id(p))
+                            if idx is not None:
+                                tri_indices.append(idx)
+                                if has_uv:
+                                    x, y, z = p.x(), p.y(), p.z()
+                                    tri_uvs.append([ux*x + uy*y + uz*z + uc, vx*x + vy*y + vz*z + vc])
+                                else:
+                                    tri_uvs.append([0.0, 0.0])
+                        if len(tri_indices) == 3:
+                            faces.append(tri_indices)
+                            uvs.append(tri_uvs)
+                            face_materials.append(mat_idx)
+                    continue
+
+            for v in f.loop:
+                idx = vid_to_idx.get(id(v))
+                if idx is not None:
+                    face_indices.append(idx)
+                    if has_uv:
+                        x, y, z = v.position.x(), v.position.y(), v.position.z()
+                        face_uvs.append([ux*x + uy*y + uz*z + uc, vx*x + vy*y + vz*z + vc])
+                    else:
+                        face_uvs.append([0.0, 0.0])
+                    
+            if len(face_indices) < 3:
+                continue
+                
+            faces.append(face_indices)
+            uvs.append(face_uvs)
+            face_materials.append(mat_idx)
 
         return {"vertices": verts, "faces": faces, "uvs": uvs, "materials": materials, "face_materials": face_materials}
 
