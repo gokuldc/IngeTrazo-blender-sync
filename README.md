@@ -61,4 +61,4 @@ python -m unittest discover tests/
 - [x] Group/Component Geometry Sync
 - [x] Material properties sync (Color, Texture, Opacity)
 - [x] Support for native Blender collection organization based on IFC tags
-- [ ] Two-way synchronization (Blender transformations -> IngeTrazo)
+- [x] Two-way synchronization (Blender transformations -> IngeTrazo)

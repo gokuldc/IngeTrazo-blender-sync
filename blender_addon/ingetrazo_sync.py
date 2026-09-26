@@ -319,6 +319,36 @@ class INGETRAZO_PT_panel(bpy.types.Panel):
         else:
             row.operator("ingetrazo.disconnect")
 
+@bpy.app.handlers.persistent
+def on_depsgraph_update(scene, depsgraph):
+    if not _is_connected or not _socket:
+        return
+        
+    for update in depsgraph.updates:
+        if update.is_updated_transform:
+            obj = update.id
+            if isinstance(obj, bpy.types.Object) and obj.get("ingetrazo_sync"):
+                uid = obj.get("ingetrazo_uuid")
+                if uid:
+                    m = obj.matrix_local
+                    transform = [
+                        m[0][0], m[1][0], m[2][0], m[3][0],
+                        m[0][1], m[1][1], m[2][1], m[3][1],
+                        m[0][2], m[1][2], m[2][2], m[3][2],
+                        m[0][3], m[1][3], m[2][3], m[3][3]
+                    ]
+                    msg = {
+                        "protocol": "ingetrazo-blender-sync",
+                        "message": "transform_update",
+                        "object_id": uid,
+                        "transform": transform
+                    }
+                    try:
+                        data = (json.dumps(msg) + "\n").encode("utf-8")
+                        _socket.sendall(data)
+                    except:
+                        pass
+
 def register():
     bpy.types.Scene.ingetrazo_host = bpy.props.StringProperty(
         name="Host", default="127.0.0.1"
@@ -330,6 +360,8 @@ def register():
     bpy.utils.register_class(INGETRAZO_OT_connect)
     bpy.utils.register_class(INGETRAZO_OT_disconnect)
     bpy.utils.register_class(INGETRAZO_PT_panel)
+    if on_depsgraph_update not in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.append(on_depsgraph_update)
 
 def unregister():
     global _is_connected
@@ -348,6 +380,8 @@ def unregister():
     bpy.utils.unregister_class(INGETRAZO_OT_connect)
     bpy.utils.unregister_class(INGETRAZO_OT_disconnect)
     bpy.utils.unregister_class(INGETRAZO_PT_panel)
+    if on_depsgraph_update in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(on_depsgraph_update)
     
     del bpy.types.Scene.ingetrazo_host
     del bpy.types.Scene.ingetrazo_port

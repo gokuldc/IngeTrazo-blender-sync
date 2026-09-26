@@ -21,6 +21,7 @@ class _BlenderSyncServer(QObject):
 
     # Signal to queue updates to the network thread
     _send_signal = Signal(object)
+    _recv_transform_signal = Signal(str, list)
 
     def __init__(self, viewport):
         super().__init__(viewport)
@@ -34,10 +35,33 @@ class _BlenderSyncServer(QObject):
 
         self.viewport.sceneVersionChanged.connect(self._on_scene_changed, Qt.QueuedConnection)
         self._send_signal.connect(self._handle_signal, Qt.QueuedConnection)
+        self._recv_transform_signal.connect(self._on_transform_received, Qt.QueuedConnection)
 
     def _handle_signal(self, payload):
         if payload == "force_full":
             self._on_scene_changed(self.viewport.scene.version, force_full=True)
+
+    def _find_group_by_uid(self, groups, uid):
+        for g in groups:
+            if getattr(g, "uid", None) == uid:
+                return g
+            res = self._find_group_by_uid(getattr(g, "children", []), uid)
+            if res:
+                return res
+        return None
+
+    def _on_transform_received(self, uid, t):
+        group = self._find_group_by_uid(self.viewport.scene.groups, uid)
+        if group and getattr(group, "xform", None) is not None:
+            from PySide6.QtGui import QMatrix4x4
+            m = QMatrix4x4(
+                t[0], t[4], t[8],  t[12],
+                t[1], t[5], t[9],  t[13],
+                t[2], t[6], t[10], t[14],
+                t[3], t[7], t[11], t[15]
+            )
+            group.xform = m
+            self.viewport.update()
 
     def start(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -119,6 +143,8 @@ class _BlenderSyncServer(QObject):
                                 "message": "hello_ack",
                                 "revision": self.viewport.scene.version
                             })
+                        elif req.get("message") == "transform_update":
+                            self._recv_transform_signal.emit(req["object_id"], req["transform"])
                     except Exception as e:
                         print("[SYNC] Invalid message from client:", e)
             if conn in self.clients:
