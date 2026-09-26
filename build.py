@@ -16,7 +16,7 @@ license = ["SPDX:GPL-3.0-or-later"]
 tags = ["Import-Export", "3D View"]
 
 [permissions]
-network = "Required to connect to the IngeTrazo TCP sync server."
+network = "Required to connect to the IngeTrazo TCP sync server"
 """
 
 def main():
