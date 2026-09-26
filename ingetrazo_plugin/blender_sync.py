@@ -8,6 +8,8 @@ import threading
 import queue
 import traceback
 from dataclasses import dataclass
+def sync_log(msg):
+    print(msg)
 
 from PySide6.QtCore import QObject, Qt, Signal
 
@@ -21,7 +23,7 @@ class _BlenderSyncServer(QObject):
 
     # Signal to queue updates to the network thread
     _send_signal = Signal(object)
-    _recv_transform_signal = Signal(str, list)
+    _recv_transform_signal = Signal(object, object)
 
     def __init__(self, viewport):
         super().__init__(viewport)
@@ -51,8 +53,10 @@ class _BlenderSyncServer(QObject):
         return None
 
     def _on_transform_received(self, uid, t):
+        sync_log(f"[SYNC] Received transform for {uid}")
         group = self._find_group_by_uid(self.viewport.scene.groups, uid)
         if group:
+            sync_log(f"[SYNC] Applying transform to {group.name}")
             from PySide6.QtGui import QMatrix4x4
             m = QMatrix4x4(
                 t[0], t[4], t[8],  t[12],
@@ -61,7 +65,11 @@ class _BlenderSyncServer(QObject):
                 t[3], t[7], t[11], t[15]
             )
             group.xform = m
+            if hasattr(self.viewport.scene, "changed"):
+                self.viewport.scene.changed.emit()
             self.viewport.update()
+        else:
+            sync_log(f"[SYNC] Group {uid} not found")
 
     def start(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -106,7 +114,7 @@ class _BlenderSyncServer(QObject):
             except OSError:
                 return
 
-            print(f"[SYNC] Blender connected from {addr}")
+            sync_log(f"[SYNC] Blender connected from {addr}")
             self.clients.append(conn)
             
             # Start a receiver thread for this client (for handshake/ping)
@@ -144,9 +152,10 @@ class _BlenderSyncServer(QObject):
                                 "revision": self.viewport.scene.version
                             })
                         elif req.get("message") == "transform_update":
+                            sync_log(f"[SYNC THREAD] Received transform for {req['object_id']}")
                             self._recv_transform_signal.emit(req["object_id"], req["transform"])
                     except Exception as e:
-                        print("[SYNC] Invalid message from client:", e)
+                        sync_log(f"[SYNC] Invalid message from client: {e}")
             if conn in self.clients:
                 self.clients.remove(conn)
 

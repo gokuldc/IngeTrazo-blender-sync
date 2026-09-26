@@ -346,8 +346,9 @@ def on_depsgraph_update(scene, depsgraph):
                     try:
                         data = (json.dumps(msg) + "\n").encode("utf-8")
                         _socket.sendall(data)
-                    except:
-                        pass
+                        print(f"[IngeTrazo Sync] Sent transform for {uid}")
+                    except Exception as e:
+                        print(f"[IngeTrazo Sync] Send failed: {e}")
 
 def register():
     bpy.types.Scene.ingetrazo_host = bpy.props.StringProperty(
