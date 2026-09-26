@@ -16,9 +16,10 @@ __pycache__/
 *.swp
 *.swo
 .DS_Store
-Thumbs.db
-
 # Documentation artifacts
 docs/ingetrazo-analysis.md
+
+# Build
+dist/
 # Dependencies / External
 vendor/
