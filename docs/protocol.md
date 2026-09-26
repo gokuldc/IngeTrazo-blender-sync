@@ -120,6 +120,20 @@ An object in this context is primarily a `core.group.Group` from IngeTrazo, iden
 }
 ```
 
+## Client Updates (Two-way sync)
+Blender can send transformations back to IngeTrazo when objects are moved. This only applies to objects with valid UUIDs (IngeTrazo Groups). Loose geometry (`loose-geometry-0000`) cannot be live-transformed because it lacks a local matrix in the IngeTrazo engine.
+
+**Blender → IngeTrazo:**
+```json
+{
+  "protocol": "ingetrazo-blender-sync",
+  "message": "transform_update",
+  "object_id": "uuid-string",
+  "transform": [1.0, 0.0, 0.0, 0.0, ...]
+}
+```
+*Note: `transform` is a 16-element array (column-major QMatrix4x4) containing the new local matrix relative to Blender's origin.*
+
 ## Materials
 **IngeTrazo → Blender:**
 ```json
