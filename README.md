@@ -54,3 +54,7 @@ Run the Python unit tests for the protocol:
 python -m unittest discover tests/
 ```
 
+## Roadmap (Version 2.0)
+- [ ] **Camera Syncing**: Sync the active camera view between IngeTrazo and Blender in real-time.
+- [ ] **Sun & Lighting Syncing**: Transmit IngeTrazo's real-world sun angle and geographic location to automatically drive a Sky Texture in Blender.
+- [ ] **Curve Support**: Native synchronization for non-polygonal geometry and splines.
